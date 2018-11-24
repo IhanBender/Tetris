@@ -3,16 +3,23 @@
 #include <stb_image.h>
 
 #include <learnopengl/filesystem.h>
-#include <learnopengl/shader_s.h>
+#include <learnopengl/shader_m.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
+
+// Tetris specific includes
+#include <tetris/pieces.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 480;
+const unsigned int SCR_HEIGHT = 420;
 
 int main()
 {
@@ -87,13 +94,20 @@ int main()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
+    /*
+    Main Screen :
+    0.368f,  0.635f, 0.0f
+    0.368f, -0.785f, 0.0f
+    -0.252f, -0.785f, 0.0f
+    -0.252f,  0.635f, 0.0f
+    */
 
     float squareVertices[] = {
-        // positions          // colors           // texture coords
-         0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-         0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-        -0.8f, -0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
+        // positions              // colors           // texture coords
+        -0.190f, -0.714f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+        -0.190f, -0.785f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+        -0.252f, -0.785f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+        -0.252f, -0.714f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
     };
     unsigned int squareIndices[] = {
         0, 1, 3, // first triangle
@@ -121,7 +135,6 @@ int main()
     // texture coord attribute
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
-
 
     // load and create a texture 
     // -------------------------
@@ -164,7 +177,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // load image, create texture and generate mipmaps
-    data = stbi_load(FileSystem::getPath("resources/textures/square.png").c_str(), &width, &height, &nrChannels, 0);
+    data = stbi_load(FileSystem::getPath("resources/textures/square2.png").c_str(), &width, &height, &nrChannels, 0);
     if (data)
     {
         // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
@@ -177,6 +190,14 @@ int main()
     }
     stbi_image_free(data);
 
+    bool squareMatrix[10][40];
+    for (int i = 0; i < 10; i++)
+        for (int j = 0; j < 40; j++)
+            squareMatrix[i][j] = false;
+        
+
+    float xStep = 0.062;
+    float yStep = 0.071;
 
     // render loop
     // -----------
@@ -195,23 +216,30 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
 
-        // render container
-        ourShader.use(); // don't forget to activate/use the shader before setting uniforms!
-        // either set it manually like so:
-        glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+        glm::mat4 model = glm::mat4(1);
 
-        ourShader.use();
+        // render Screen
+        ourShader.use(); // don't forget to activate/use the shader before setting uniforms!
+        glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+        ourShader.setMat4("model", model);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        // render squares
-        ourShader.use(); // don't forget to activate/use the shader before setting uniforms!
-        // either set it manually like so:
-        glUniform1i(glGetUniformLocation(ourShader.ID, "squareTexture"), 0);
+         // bind textures on corresponding texture units
+        glBindTexture(GL_TEXTURE_2D, squareTexture);
 
-        ourShader.use();
-        glBindVertexArray(squareVAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        for(int i = 0; i < 10; i++){
+            for(int j = 0; j < 20; j++){
+                if (squareMatrix[i][j]){
+                    model = glm::translate(glm::mat4(1), glm::vec3(xStep * i, yStep * j, 0));
+                    ourShader.use();
+                    ourShader.setMat4("model", model);
+                    glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+                    glBindVertexArray(squareVAO);
+                    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                }
+            }
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -224,6 +252,10 @@ int main()
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
+
+    glDeleteVertexArrays(1, &squareVAO);
+    glDeleteBuffers(1, &squareVBO);
+    glDeleteBuffers(1, &squareEBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
