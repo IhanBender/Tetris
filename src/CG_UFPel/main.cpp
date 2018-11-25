@@ -10,12 +10,29 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
+#include <vector>
 
 // Tetris specific includes
 #include <tetris/pieces.h>
 
+float xStep = 0.062;
+float yStep = 0.071;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
+void drawPiece(Piece piece, unsigned int texture, Shader ourShader, unsigned int squareVAO, float scale = 1.0) {
+    std::vector<int> coords = getPieceCoords(piece);
+
+    for(int i = 0; i < (int)coords.size(); i+=2){
+        glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3((scale) * xStep * (piece.x + coords[i]),(scale) * yStep * (piece.y + coords[i+1]), 0));
+        model = glm::scale(model, glm::vec3(scale));
+        ourShader.use();
+        ourShader.setMat4("model", model);
+        glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+        glBindVertexArray(squareVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+}
 
 // settings
 const unsigned int SCR_WIDTH = 480;
@@ -196,8 +213,35 @@ int main()
             squareMatrix[i][j] = false;
         
 
-    float xStep = 0.062;
-    float yStep = 0.071;
+    Piece currentPiece;
+    currentPiece.name = generatePiece();
+    currentPiece.state = 0;
+    currentPiece.x = 4;
+    currentPiece.y = 19;
+
+
+    // Next Piece
+    Piece nextPiece;
+    nextPiece.name = generatePiece();
+    nextPiece.state = 0;
+
+    if (nextPiece.name == 'i'){ nextPiece.x = 12;    nextPiece.y = 10.5; }   
+    if (nextPiece.name == 'o'){ nextPiece.x = 13;    nextPiece.y = 10;   }
+    if (nextPiece.name == 't'){ nextPiece.x = 12.7;  nextPiece.y = 10;   }
+    if (nextPiece.name == 's'){ nextPiece.x = 13.5;  nextPiece.y = 10;   }
+    if (nextPiece.name == 'z'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
+    if (nextPiece.name == 'j'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
+    if (nextPiece.name == 'l'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
+    
+
+    // Statistics
+    Piece TPiece { -12.5,   14.5,   0,  't'};
+    Piece JPiece { -12.5,   12,     0,  'j'};
+    Piece ZPiece { -12.5,   9.5,    0,  'z'};
+    Piece OPiece { -12,     6.5,    0,  'o'};
+    Piece SPiece { -11.5,   3.5,    0,  's'};
+    Piece LPiece { -12.5,   1,      0,  'l'};
+    Piece IPiece { -13,     -1,     0,  'i'};
 
     // render loop
     // -----------
@@ -217,6 +261,8 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture1);
 
         glm::mat4 model = glm::mat4(1);
+
+        // render statistics
 
         // render Screen
         ourShader.use(); // don't forget to activate/use the shader before setting uniforms!
@@ -240,6 +286,24 @@ int main()
                 }
             }
         }
+
+        drawPiece(nextPiece, squareTexture, ourShader, squareVAO);
+
+        // Statistics
+        model = glm::scale(glm::mat4(1), glm::vec3(0.5f, 0.5f, 0.5f));
+        ourShader.use();
+        ourShader.setMat4("model", model);
+        glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+        glBindVertexArray(squareVAO);
+        
+        float scale = 0.75;
+        drawPiece(IPiece, squareTexture, ourShader, squareVAO, scale);
+        drawPiece(OPiece, squareTexture, ourShader, squareVAO, scale);
+        drawPiece(SPiece, squareTexture, ourShader, squareVAO, scale); 
+        drawPiece(LPiece, squareTexture, ourShader, squareVAO, scale);
+        drawPiece(ZPiece, squareTexture, ourShader, squareVAO, scale);
+        drawPiece(JPiece, squareTexture, ourShader, squareVAO, scale);
+        drawPiece(TPiece, squareTexture, ourShader, squareVAO, scale);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
