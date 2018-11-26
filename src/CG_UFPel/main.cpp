@@ -24,13 +24,15 @@ void drawPiece(Piece piece, unsigned int texture, Shader ourShader, unsigned int
     std::vector<int> coords = getPieceCoords(piece);
 
     for(int i = 0; i < (int)coords.size(); i+=2){
-        glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3((scale) * xStep * (piece.x + coords[i]),(scale) * yStep * (piece.y + coords[i+1]), 0));
-        model = glm::scale(model, glm::vec3(scale));
-        ourShader.use();
-        ourShader.setMat4("model", model);
-        glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
-        glBindVertexArray(squareVAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        if(piece.y + coords[i+1] < 20){
+            glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3((scale) * xStep * (piece.x + coords[i]),(scale) * yStep * (piece.y + coords[i+1]), 0));
+            model = glm::scale(model, glm::vec3(scale));
+            ourShader.use();
+            ourShader.setMat4("model", model);
+            glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+            glBindVertexArray(squareVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        }
     }
 }
 
@@ -207,18 +209,20 @@ int main()
     }
     stbi_image_free(data);
 
-    bool squareMatrix[10][40];
-    for (int i = 0; i < 10; i++)
+    //bool squareMatrix[10][40];
+    bool ** squareMatrix;
+    squareMatrix = (bool **)malloc(sizeof(bool *) * 10);
+    for (int i = 0; i < 10; i++){
+        squareMatrix[i] = (bool *)malloc(sizeof(bool) * 40);
         for (int j = 0; j < 40; j++)
             squareMatrix[i][j] = false;
-        
+    }
 
     Piece currentPiece;
     currentPiece.name = generatePiece();
     currentPiece.state = 0;
     currentPiece.x = 4;
     currentPiece.y = 19;
-
 
     // Next Piece
     Piece nextPiece;
@@ -243,13 +247,58 @@ int main()
     Piece LPiece { -12.5,   1,      0,  'l'};
     Piece IPiece { -13,     -1,     0,  'i'};
 
+    float inicialTime = 0.0f;
+    unsigned int numberOfPieces = 0;
+    unsigned int numberOfLines = 0;
+    // I, O, T, S, Z, J, L
+    unsigned int pieces[] = {0,0,0,0,0,0,0};
+    float blockTime = 1.0f;
+    // Delay for activating input keys again
+    float sideKeyDelay = 0.3f;
+    float downKeyDelay = 0.05f;
+    float lastSidePressed = -0.3f;
+    float lastDownPressed = -0.1f;
+
+    bool QPressed = false;  // Rotate Right
+    bool WPressed = false;  // Rotate Left
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        float currentFrame = glfwGetTime();
         // input
         // -----
         processInput(window);
+        // Process game input
+        // Rotate Right
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_RELEASE)
+            QPressed = false;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && !QPressed){
+            currentPiece.state = rotateRight(currentPiece, squareMatrix);
+            QPressed = true;
+        }
+        // Rotate Left
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_RELEASE)
+            WPressed = false;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && !WPressed){
+            currentPiece.state = rotateLeft(currentPiece, squareMatrix);
+            WPressed = true;
+        }
+        // Move Right
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && currentFrame - lastSidePressed > sideKeyDelay){
+            if (canMoveRight(currentPiece, squareMatrix)){
+                currentPiece.x += 1.0;
+                lastSidePressed = currentFrame;
+            }
+        }
+        // Move Left
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS && currentFrame - lastSidePressed > sideKeyDelay){
+            if (canMoveLeft(currentPiece, squareMatrix)){
+                currentPiece.x -= 1.0;
+                lastSidePressed = currentFrame;
+            }
+        }
 
         // render
         // ------
@@ -260,20 +309,16 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
 
-        glm::mat4 model = glm::mat4(1);
-
-        // render statistics
-
         // render Screen
+        glm::mat4 model = glm::mat4(1);
         ourShader.use(); // don't forget to activate/use the shader before setting uniforms!
         glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
         ourShader.setMat4("model", model);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-         // bind textures on corresponding texture units
+        // render already set blocks
         glBindTexture(GL_TEXTURE_2D, squareTexture);
-
         for(int i = 0; i < 10; i++){
             for(int j = 0; j < 20; j++){
                 if (squareMatrix[i][j]){
@@ -287,9 +332,13 @@ int main()
             }
         }
 
+        // Render current piece
+        drawPiece(currentPiece, squareTexture, ourShader, squareVAO);
+
+        // Render next piece
         drawPiece(nextPiece, squareTexture, ourShader, squareVAO);
 
-        // Statistics
+        // Render Statistics
         model = glm::scale(glm::mat4(1), glm::vec3(0.5f, 0.5f, 0.5f));
         ourShader.use();
         ourShader.setMat4("model", model);

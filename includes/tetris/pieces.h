@@ -12,8 +12,8 @@ struct Piece {
     char name;
 };
 
-std::vector<int> I0 = {0,-1, 1,-1, 2,-1, 3,-1};
-std::vector<int> I1 = {1, 0, 1,-1, 1,-2, 1,-3};
+std::vector<int> I0 = {0,0, 1,0, 2, 0, 3, 0};
+std::vector<int> I1 = {1,1, 1,0, 1,-1, 1,-2};
 std::vector <std::vector<int>> I = {I0, I1};
 
 std::vector<int> O0 = {0,0, 1,0, 0,-1, 1,-1};
@@ -120,66 +120,71 @@ bool collides(Piece piece, bool ** map) {
     return false;
 }
 
-bool canMoveRight(Piece piece, bool ** map) {
-    piece.x += 1;
+bool canMoveRight(Piece piece,bool ** map) {
+    piece.x += 1.0;
     std::vector<int> newCoords = getPieceCoords(piece);
 
     for(int i = 0; i < newCoords.size(); i+=2) {
-        if (piece.x + newCoords[i] < 0 || piece.x + newCoords[i] > 9)
+        if ((int)piece.x + newCoords[i] < 0 || (int)piece.x + newCoords[i] > 9)
             return false;
     }
 
     return true;
 }
 
-bool canMoveLeft(Piece piece, bool ** map) {
-    piece.x -= 1.0;
+bool canMoveLeft(Piece piece,bool ** map) {
+     piece.x -= 1.0;
     std::vector<int> newCoords = getPieceCoords(piece);
 
     for(int i = 0; i < newCoords.size(); i+=2) {
-        if (piece.x + newCoords[i] < 0 || piece.x + newCoords[i] > 9)
+        if ((int)piece.x + newCoords[i] < 0 || (int)piece.x + newCoords[i] > 9)
             return false;
     }
 
     return true;
 }
 
-unsigned int rotateRight(Piece piece, bool ** map){
+unsigned int rotateRight(Piece piece,bool ** map){
     unsigned int state = piece.state;
     unsigned int newState;
-    if      (piece.name == 't' || piece.name == 'j' || piece.name == 'l'){
-        if (state == 3)
-            newState = 0;
-    } 
-    else if (piece.name == 'i' || piece.name == 's' || piece.name == 'z'){
-        if (state == 1)
-            newState = 0;
-    }
-    else if (piece.name == 'o') {
+
+    if (piece.name == 'o') {
         return state;
+    }
+    if (piece.name == 't' || piece.name == 'j' || piece.name == 'l' && state == 3){
+        newState = 0;
+    } 
+    else if ((piece.name == 'i' || piece.name == 's' || piece.name == 'z') && state == 1 ){
+        newState = 0;
     }
     else {
         newState = state + 1;
     }
 
+    // Acts like if had changed state
     piece.state = newState;
     std::vector<int> newCoords = getPieceCoords(piece);
     for (int i = 0; i < newCoords.size(); i+=2) {
         if( 
-            piece.x + newCoords[i] < 0      ||
-            piece.x + newCoords[i] > 9      ||
-            piece.y + newCoords[i+1] < 0    ||
+            (int)piece.x + newCoords[i] < 0      ||
+            (int)piece.x + newCoords[i] > 9      ||
+            (int)piece.y + newCoords[i+1] < 0    ||
             map[(int)piece.x + newCoords[i]][(int)piece.y + newCoords[i+1]]) 
         {
             return state;
         }
     }
+
     return newState;
 }
 
-unsigned int rotateLeft(Piece piece, bool ** map){
+unsigned int rotateLeft(Piece piece, bool ** mapa){
     unsigned int state = piece.state;
     unsigned int newState;
+
+    if (piece.name == 'o') {
+        return state;
+    }
 
     if (state == 0) {
         if      (piece.name == 't' || piece.name == 'j' || piece.name == 'l'){
@@ -188,10 +193,6 @@ unsigned int rotateLeft(Piece piece, bool ** map){
         else if (piece.name == 'i' || piece.name == 's' || piece.name == 'z'){
             newState = 1;
         }
-    }
-
-    if (piece.name == 'o') {
-        return state;
     }
     else {
         newState = state - 1;
@@ -204,7 +205,7 @@ unsigned int rotateLeft(Piece piece, bool ** map){
             piece.x + newCoords[i] < 0      ||
             piece.x + newCoords[i] > 9      ||
             piece.y + newCoords[i+1] < 0    ||
-            map[(int)piece.x + newCoords[i]][(int)piece.y + newCoords[i+1]]) 
+            mapa[(int)piece.x + newCoords[i]][(int)piece.y + newCoords[i+1]]) 
         {
             return state;
         }
