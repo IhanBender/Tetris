@@ -319,8 +319,7 @@ int main()
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        bool mustCheckLines = false;
-        bool mustCheckPiece = false;
+        bool mustCheck = false;
         // Checks if piece already has to stop
         if (mustStop) {
             updateMap(currentPiece, squareMatrix);
@@ -329,8 +328,7 @@ int main()
             nextPiece = genNextPiece();
             inicialTime = currentFrame;
             mustStop = false;
-            mustCheckLines = true;
-            mustCheckPiece = true;
+            mustCheck = true;
         } else {
             // Checks for block vertical movement (natural movement, not user's input)
             if (currentFrame - inicialTime > blockTime) {
@@ -342,25 +340,28 @@ int main()
                     currentPiece = genCurrentPiece(nextPiece.name);
                     nextPiece = genNextPiece();
                     mustStop = false;
-                    mustCheckLines = true;
-                    mustCheckPiece = true;
+                    mustCheck = true;
                 } else {
                     currentPiece.y -= 1;
                 }    
             }
         }
 
-        // Checks line maintenence
-        numberOfLines += removeFullLines(squareMatrix);
-        // Checks for piece statistics
-        if(currentPiece.name == 'i')    pieces[0]++;
-        if(currentPiece.name == 'o')    pieces[1]++;
-        if(currentPiece.name == 't')    pieces[2]++;
-        if(currentPiece.name == 's')    pieces[3]++;
-        if(currentPiece.name == 'z')    pieces[4]++;
-        if(currentPiece.name == 'j')    pieces[5]++;
-        if(currentPiece.name == 'l')    pieces[6]++;
-
+        if (mustCheck){
+            if(gameOver(squareMatrix)){
+                glfwSetWindowShouldClose(window, true);
+            }
+            // Checks line maintenence
+            numberOfLines += removeFullLines(squareMatrix);
+            // Checks for piece statistics
+            if(currentPiece.name == 'i')    pieces[0]++;
+            if(currentPiece.name == 'o')    pieces[1]++;
+            if(currentPiece.name == 't')    pieces[2]++;
+            if(currentPiece.name == 's')    pieces[3]++;
+            if(currentPiece.name == 'z')    pieces[4]++;
+            if(currentPiece.name == 'j')    pieces[5]++;
+            if(currentPiece.name == 'l')    pieces[6]++;
+        }
 
         // render already set blocks
         glBindTexture(GL_TEXTURE_2D, squareTexture);

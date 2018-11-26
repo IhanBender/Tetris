@@ -67,7 +67,7 @@ Piece genCurrentPiece(char name) {
     currentPiece.name = name;
     currentPiece.state = 0;
     currentPiece.x = 4;
-    currentPiece.y = 19;
+    currentPiece.y = 20;
 
     return currentPiece;
 }
@@ -294,6 +294,14 @@ unsigned int removeFullLines(bool ** map) {
         }
 
     return linesRemoved;
+}
+
+bool gameOver(bool ** map){
+    for (int i = 3; i < 8; i++){
+        if (map[i][19])
+            return true;
+    }
+    return false;
 }
 
 #endif // __PIECES_H__ 
