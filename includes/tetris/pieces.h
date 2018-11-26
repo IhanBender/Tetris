@@ -62,6 +62,31 @@ char generatePiece(){
     return 'i';
 }
 
+Piece genCurrentPiece(char name) {
+    Piece currentPiece;
+    currentPiece.name = name;
+    currentPiece.state = 0;
+    currentPiece.x = 4;
+    currentPiece.y = 19;
+
+    return currentPiece;
+}
+
+Piece genNextPiece(){
+    Piece nextPiece;
+    nextPiece.name = generatePiece();
+    nextPiece.state = 0;
+    if (nextPiece.name == 'i'){ nextPiece.x = 12;    nextPiece.y = 9.7; }   
+    if (nextPiece.name == 'o'){ nextPiece.x = 13;    nextPiece.y = 10;   }
+    if (nextPiece.name == 't'){ nextPiece.x = 12.7;  nextPiece.y = 10;   }
+    if (nextPiece.name == 's'){ nextPiece.x = 13.5;  nextPiece.y = 10;   }
+    if (nextPiece.name == 'z'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
+    if (nextPiece.name == 'j'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
+    if (nextPiece.name == 'l'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
+
+    return nextPiece;
+}
+
 // Returns coordinates to plot pieces, based on their current main position
 std::vector<int> getPieceCoords(Piece piece){
 
@@ -101,7 +126,6 @@ std::vector<int> getPieceCoords(Piece piece){
     return r;   
 }
 
-
 // Checks if piece collides with another piece already set or the bottom
 bool collides(Piece piece, bool ** map) {
     std::vector<int> coords = getPieceCoords(piece);
@@ -120,6 +144,20 @@ bool collides(Piece piece, bool ** map) {
     return false;
 }
 
+bool canMoveDown(Piece piece, bool ** map) {
+    piece.y -= 1.0;
+    std::vector<int> newCoords = getPieceCoords(piece);
+
+    for(int i = 0; i < newCoords.size(); i+=2) {
+        if ((int)piece.y + newCoords[i+1] < 0 ||
+            collides(piece, map)
+        )
+            return false;
+    }
+
+    return true;
+}
+
 bool canMoveRight(Piece piece,bool ** map) {
     piece.x += 1.0;
     std::vector<int> newCoords = getPieceCoords(piece);
@@ -128,6 +166,9 @@ bool canMoveRight(Piece piece,bool ** map) {
         if ((int)piece.x + newCoords[i] < 0 || (int)piece.x + newCoords[i] > 9)
             return false;
     }
+
+    if(collides(piece, map))
+        return false;
 
     return true;
 }
@@ -140,6 +181,9 @@ bool canMoveLeft(Piece piece,bool ** map) {
         if ((int)piece.x + newCoords[i] < 0 || (int)piece.x + newCoords[i] > 9)
             return false;
     }
+
+    if(collides(piece, map))
+        return false;
 
     return true;
 }
@@ -178,7 +222,7 @@ unsigned int rotateRight(Piece piece,bool ** map){
     return newState;
 }
 
-unsigned int rotateLeft(Piece piece, bool ** mapa){
+unsigned int rotateLeft(Piece piece, bool ** map){
     unsigned int state = piece.state;
     unsigned int newState;
 
@@ -205,12 +249,51 @@ unsigned int rotateLeft(Piece piece, bool ** mapa){
             piece.x + newCoords[i] < 0      ||
             piece.x + newCoords[i] > 9      ||
             piece.y + newCoords[i+1] < 0    ||
-            mapa[(int)piece.x + newCoords[i]][(int)piece.y + newCoords[i+1]]) 
+            map[(int)piece.x + newCoords[i]][(int)piece.y + newCoords[i+1]]) 
         {
             return state;
         }
     }
     return newState;
+}
+
+void updateMap(Piece piece, bool ** map) {
+    std::vector<int> coords = getPieceCoords(piece);
+    for (int i = 0; i < coords.size(); i+=2){
+        map[(int)piece.x + coords[i]][(int)piece.y + coords[i+1]] = true; 
+    }
+}
+
+// Removes lines from map and returns number of lines removed
+unsigned int removeFullLines(bool ** map) {
+    unsigned int linesRemoved = 0;
+    int firstLine = -1, i, j;
+    bool mustRemove;
+    // Checks for number of lines to remove
+    for(i = 0; i < 20; i++){
+        mustRemove = true;
+        for(j = 0; j < 10 && mustRemove; j++){
+            if(!map[j][i])
+                mustRemove = false;
+        }
+        if(mustRemove) {
+            ++linesRemoved;
+            if (firstLine == -1){
+                printf("FristLines\n");
+                firstLine = i;
+                printf("%d\n", firstLine);
+            }
+        }
+    }
+    // Remove lines
+    if (firstLine != -1)
+        for (i = 0; i < 10; i++) {
+            for (j = firstLine; j < 20; j++) {
+                map[i][j] = map[i][j+linesRemoved];
+            }
+        }
+
+    return linesRemoved;
 }
 
 #endif // __PIECES_H__ 

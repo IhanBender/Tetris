@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <vector>
+#include <unistd.h>
 
 // Tetris specific includes
 #include <tetris/pieces.h>
@@ -218,26 +219,13 @@ int main()
             squareMatrix[i][j] = false;
     }
 
-    Piece currentPiece;
-    currentPiece.name = generatePiece();
-    currentPiece.state = 0;
-    currentPiece.x = 4;
-    currentPiece.y = 19;
-
-    // Next Piece
-    Piece nextPiece;
-    nextPiece.name = generatePiece();
-    nextPiece.state = 0;
-
-    if (nextPiece.name == 'i'){ nextPiece.x = 12;    nextPiece.y = 10.5; }   
-    if (nextPiece.name == 'o'){ nextPiece.x = 13;    nextPiece.y = 10;   }
-    if (nextPiece.name == 't'){ nextPiece.x = 12.7;  nextPiece.y = 10;   }
-    if (nextPiece.name == 's'){ nextPiece.x = 13.5;  nextPiece.y = 10;   }
-    if (nextPiece.name == 'z'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
-    if (nextPiece.name == 'j'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
-    if (nextPiece.name == 'l'){ nextPiece.x = 12.5;  nextPiece.y = 10;   }
+    // Sets inicial current piece
+    Piece currentPiece = genCurrentPiece(generatePiece());
+    // Sleeps to change seed
+    sleep(1);
+    // Sets iniciaç next piece
+    Piece nextPiece = genNextPiece();
     
-
     // Statistics
     Piece TPiece { -12.5,   14.5,   0,  't'};
     Piece JPiece { -12.5,   12,     0,  'j'};
@@ -245,22 +233,26 @@ int main()
     Piece OPiece { -12,     6.5,    0,  'o'};
     Piece SPiece { -11.5,   3.5,    0,  's'};
     Piece LPiece { -12.5,   1,      0,  'l'};
-    Piece IPiece { -13,     -1,     0,  'i'};
+    Piece IPiece { -13,     -2,     0,  'i'};
 
-    float inicialTime = 0.0f;
+    // Info about current game
     unsigned int numberOfPieces = 0;
     unsigned int numberOfLines = 0;
     // I, O, T, S, Z, J, L
     unsigned int pieces[] = {0,0,0,0,0,0,0};
+    // Block falling and dificulty increasing logic variables
+    float inicialTime =  glfwGetTime();
     float blockTime = 1.0f;
+    float timeMultiplier = 0.667f;
     // Delay for activating input keys again
     float sideKeyDelay = 0.3f;
     float downKeyDelay = 0.05f;
     float lastSidePressed = -0.3f;
-    float lastDownPressed = -0.1f;
-
+    float lastDownPressed = -0.05f;
+    // control variables
     bool QPressed = false;  // Rotate Right
     bool WPressed = false;  // Rotate Left
+    bool mustStop = false;  // Controls piece stop
 
     // render loop
     // -----------
@@ -299,6 +291,16 @@ int main()
                 lastSidePressed = currentFrame;
             }
         }
+        // Move Down
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && currentFrame - lastDownPressed > downKeyDelay){
+            if (canMoveDown(currentPiece, squareMatrix)){
+                currentPiece.y -= 1.0;
+                lastDownPressed = currentFrame;
+            }
+            else{
+                mustStop == true;
+            }
+        }
 
         // render
         // ------
@@ -309,13 +311,56 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
 
-        // render Screen
+        // render Screen background
         glm::mat4 model = glm::mat4(1);
         ourShader.use(); // don't forget to activate/use the shader before setting uniforms!
         glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
         ourShader.setMat4("model", model);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        bool mustCheckLines = false;
+        bool mustCheckPiece = false;
+        // Checks if piece already has to stop
+        if (mustStop) {
+            updateMap(currentPiece, squareMatrix);
+            // maintenance
+            currentPiece = genCurrentPiece(nextPiece.name);
+            nextPiece = genNextPiece();
+            inicialTime = currentFrame;
+            mustStop = false;
+            mustCheckLines = true;
+            mustCheckPiece = true;
+        } else {
+            // Checks for block vertical movement (natural movement, not user's input)
+            if (currentFrame - inicialTime > blockTime) {
+                inicialTime = currentFrame;
+                // If has to move, check if there is room for the piece
+                if(!canMoveDown(currentPiece, squareMatrix)){
+                    updateMap(currentPiece, squareMatrix);
+                    // maintenance
+                    currentPiece = genCurrentPiece(nextPiece.name);
+                    nextPiece = genNextPiece();
+                    mustStop = false;
+                    mustCheckLines = true;
+                    mustCheckPiece = true;
+                } else {
+                    currentPiece.y -= 1;
+                }    
+            }
+        }
+
+        // Checks line maintenence
+        numberOfLines += removeFullLines(squareMatrix);
+        // Checks for piece statistics
+        if(currentPiece.name == 'i')    pieces[0]++;
+        if(currentPiece.name == 'o')    pieces[1]++;
+        if(currentPiece.name == 't')    pieces[2]++;
+        if(currentPiece.name == 's')    pieces[3]++;
+        if(currentPiece.name == 'z')    pieces[4]++;
+        if(currentPiece.name == 'j')    pieces[5]++;
+        if(currentPiece.name == 'l')    pieces[6]++;
+
 
         // render already set blocks
         glBindTexture(GL_TEXTURE_2D, squareTexture);
@@ -344,7 +389,6 @@ int main()
         ourShader.setMat4("model", model);
         glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
         glBindVertexArray(squareVAO);
-        
         float scale = 0.75;
         drawPiece(IPiece, squareTexture, ourShader, squareVAO, scale);
         drawPiece(OPiece, squareTexture, ourShader, squareVAO, scale);
