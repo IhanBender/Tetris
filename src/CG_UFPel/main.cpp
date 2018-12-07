@@ -15,7 +15,6 @@
 
 // Tetris specific includes
 #include <tetris/pieces.h>
-
 float xStep = 0.062;
 float yStep = 0.071;
 
@@ -43,6 +42,7 @@ const unsigned int SCR_HEIGHT = 420;
 
 int main()
 {
+    srand(time(NULL));
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -238,10 +238,12 @@ int main()
     // Info about current game
     unsigned int numberOfPieces = 0;
     unsigned int numberOfLines = 0;
+    unsigned int score = 0;
+    unsigned int level = 0;
     // I, O, T, S, Z, J, L
     unsigned int pieces[] = {0,0,0,0,0,0,0};
     // Block falling and dificulty increasing logic variables
-    float inicialTime =  glfwGetTime();
+    float inicialTime = glfwGetTime();
     float blockTime = 1.0f;
     float timeMultiplier = 0.667f;
     // Delay for activating input keys again
@@ -350,9 +352,15 @@ int main()
         if (mustCheck){
             if(gameOver(squareMatrix)){
                 glfwSetWindowShouldClose(window, true);
+                printf("Pontuação: %d\n", score);
             }
             // Checks line maintenence
-            numberOfLines += removeFullLines(squareMatrix);
+            unsigned int removedLines = removeFullLines(squareMatrix);
+            if (removedLines == 1) score+=40*(level + 1);
+            if (removedLines == 2) score+=100*(level + 1); 
+            if (removedLines == 3) score+=300*(level + 1);
+            if (removedLines == 4) score+=1200*(level + 1);
+            numberOfLines += removedLines;
             // Checks for piece statistics
             if(currentPiece.name == 'i')    pieces[0]++;
             if(currentPiece.name == 'o')    pieces[1]++;

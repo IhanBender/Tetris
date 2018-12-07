@@ -46,7 +46,6 @@ std::vector<int> L3 = {1, 1, 1,0, 1,-1, 2,-1};
 std::vector<std::vector<int>> L = {L0, L1, L2, L3};
 
 char generatePiece(){
-    srand(time(NULL));
     int v = rand() % 7;
 
     switch (v) {
@@ -174,7 +173,7 @@ bool canMoveRight(Piece piece,bool ** map) {
 }
 
 bool canMoveLeft(Piece piece,bool ** map) {
-     piece.x -= 1.0;
+    piece.x -= 1.0;
     std::vector<int> newCoords = getPieceCoords(piece);
 
     for(int i = 0; i < newCoords.size(); i+=2) {
@@ -195,7 +194,7 @@ unsigned int rotateRight(Piece piece,bool ** map){
     if (piece.name == 'o') {
         return state;
     }
-    if (piece.name == 't' || piece.name == 'j' || piece.name == 'l' && state == 3){
+    if (state == 3 && (piece.name == 't' || piece.name == 'j' || piece.name == 'l') ){
         newState = 0;
     } 
     else if ((piece.name == 'i' || piece.name == 's' || piece.name == 'z') && state == 1 ){
