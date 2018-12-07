@@ -17,7 +17,9 @@
 #include <tetris/pieces.h>
 float xStep = 0.062;
 float yStep = 0.071;
+unsigned int numTexture[10];    // Number textures
 
+void drawNumbers(unsigned int value, unsigned int num, int x, int y, Shader ourShader, unsigned int squareVAO);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void drawPiece(Piece piece, unsigned int texture, Shader ourShader, unsigned int squareVAO, float scale = 1.0) {
@@ -29,6 +31,7 @@ void drawPiece(Piece piece, unsigned int texture, Shader ourShader, unsigned int
             model = glm::scale(model, glm::vec3(scale));
             ourShader.use();
             ourShader.setMat4("model", model);
+            glBindTexture(GL_TEXTURE_2D, texture);
             glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
             glBindVertexArray(squareVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -85,7 +88,7 @@ int main()
          1.0f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
          1.0f, -1.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
         -1.0f, -1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -1.0f,  1.0f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+        -1.0f,  1.0f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
     };
     unsigned int BackgroundIndices[] = {
         0, 1, 3, // first triangle
@@ -156,7 +159,7 @@ int main()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // load and create a texture 
+    // load and create a texture
     // -------------------------
     unsigned int texture1;
     int width, height, nrChannels;
@@ -185,7 +188,7 @@ int main()
     }
     stbi_image_free(data);
 
-    // load and create a texture 
+    // load and create a texture
     // -------------------------
     unsigned int squareTexture;
     glGenTextures(1, &squareTexture);
@@ -225,7 +228,7 @@ int main()
     sleep(1);
     // Sets iniciaç next piece
     Piece nextPiece = genNextPiece();
-    
+
     // Statistics
     Piece TPiece { -12.5,   14.5,   0,  't'};
     Piece JPiece { -12.5,   12,     0,  'j'};
@@ -325,7 +328,6 @@ int main()
         // Checks if piece already has to stop
         if (mustStop) {
             updateMap(currentPiece, squareMatrix);
-            // maintenance
             currentPiece = genCurrentPiece(nextPiece.name);
             nextPiece = genNextPiece();
             inicialTime = currentFrame;
@@ -350,6 +352,7 @@ int main()
         }
 
         if (mustCheck){
+
             if(gameOver(squareMatrix)){
                 glfwSetWindowShouldClose(window, true);
                 printf("Pontuação: %d\n", score);
@@ -357,19 +360,37 @@ int main()
             // Checks line maintenence
             unsigned int removedLines = removeFullLines(squareMatrix);
             if (removedLines == 1) score+=40*(level + 1);
-            if (removedLines == 2) score+=100*(level + 1); 
+            if (removedLines == 2) score+=100*(level + 1);
             if (removedLines == 3) score+=300*(level + 1);
             if (removedLines == 4) score+=1200*(level + 1);
             numberOfLines += removedLines;
+            // Number of pieces and level system
+            numberOfPieces++;
+            if (numberOfPieces % 20 == 0){
+                level++;
+                blockTime *= timeMultiplier;
+            }
             // Checks for piece statistics
-            if(currentPiece.name == 'i')    pieces[0]++;
-            if(currentPiece.name == 'o')    pieces[1]++;
-            if(currentPiece.name == 't')    pieces[2]++;
-            if(currentPiece.name == 's')    pieces[3]++;
-            if(currentPiece.name == 'z')    pieces[4]++;
-            if(currentPiece.name == 'j')    pieces[5]++;
-            if(currentPiece.name == 'l')    pieces[6]++;
+            switch (currentPiece.name){
+                case 'i':   pieces[0]++;break;
+                case 'o':   pieces[1]++;break;
+                case 't':   pieces[2]++;break;
+                case 's':   pieces[3]++;break;
+                case 'z':   pieces[4]++;break;
+                case 'j':   pieces[5]++;break;
+                case 'l':   pieces[6]++;break;
+                default:    break;
+            }
+
         }
+
+        // Render score
+
+        // Render statistics
+
+        // Render level
+
+        // Render lines
 
         // render already set blocks
         glBindTexture(GL_TEXTURE_2D, squareTexture);
@@ -444,4 +465,16 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+}
+
+
+void drawNumbers(unsigned int value, unsigned int num, int x, int y, Shader ourShader, unsigned int squareVAO){
+    glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(x,y,0));
+    model = glm::scale(model, glm::vec3(0.5, 2.0, 1.0));
+    ourShader.use();
+    ourShader.setMat4("model", model);
+
+    glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+    glBindVertexArray(squareVAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }

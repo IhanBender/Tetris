@@ -136,7 +136,7 @@ bool collides(Piece piece, bool ** map) {
         if(
             y + piece.y < 0    ||
             map[x + (int)piece.x][y + (int)piece.y]
-        ) 
+        )
             return true;
     }
 
