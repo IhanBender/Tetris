@@ -76,7 +76,7 @@ Piece genNextPiece(){
     Piece nextPiece;
     nextPiece.name = generatePiece();
     nextPiece.state = 0;
-    if (nextPiece.name == 'i'){ nextPiece.x = 12;    nextPiece.y = 9.7; }   
+    if (nextPiece.name == 'i'){ nextPiece.x = 12;    nextPiece.y = 9.7; }
     if (nextPiece.name == 'o'){ nextPiece.x = 13;    nextPiece.y = 10;   }
     if (nextPiece.name == 't'){ nextPiece.x = 12.7;  nextPiece.y = 10;   }
     if (nextPiece.name == 's'){ nextPiece.x = 13.5;  nextPiece.y = 10;   }
@@ -279,9 +279,7 @@ unsigned int removeFullLines(bool ** map) {
         if(mustRemove) {
             ++linesRemoved;
             if (firstLine == -1){
-                printf("FristLines\n");
                 firstLine = i;
-                printf("%d\n", firstLine);
             }
         }
     }

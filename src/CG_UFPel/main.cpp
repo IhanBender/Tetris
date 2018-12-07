@@ -343,7 +343,7 @@ int main()
                     mustCheck = true;
                 } else {
                     currentPiece.y -= 1;
-                }    
+                }
             }
         }
 
@@ -393,7 +393,7 @@ int main()
         float scale = 0.75;
         drawPiece(IPiece, squareTexture, ourShader, squareVAO, scale);
         drawPiece(OPiece, squareTexture, ourShader, squareVAO, scale);
-        drawPiece(SPiece, squareTexture, ourShader, squareVAO, scale); 
+        drawPiece(SPiece, squareTexture, ourShader, squareVAO, scale);
         drawPiece(LPiece, squareTexture, ourShader, squareVAO, scale);
         drawPiece(ZPiece, squareTexture, ourShader, squareVAO, scale);
         drawPiece(JPiece, squareTexture, ourShader, squareVAO, scale);
